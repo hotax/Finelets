@@ -1,46 +1,33 @@
-/**
- * Created by clx on 2017/10/9.
- */
-var proxyquire = require('proxyquire'),
-    path = require('path'),
+const proxyquire = require('proxyquire'),
     mongoose = require('mongoose'),
-    Schema = mongoose.Schema,
-    finelets = require('@finelets/hyper-rest');
+    dbSave = require('@finelets/hyper-rest/db/mongoDb/SaveObjectToDb');
 
-describe('Textrade', function () {
-    var stubs, err;
+describe('Application', function () {
+    var func, stubs, err, reason, createReasonStub;
     beforeEach(function () {
         stubs = {};
         err = new Error('any error message');
+        reason = {reason: 'any reason representing any error'}
+        createReasonStub = sinon.stub();
+        stubs['@finelets/hyper-rest/app'] = {createErrorReason: createReasonStub};
     });
 
     describe('数据库', function () {
-        var dbConnection, Schema;
-        beforeEach(function(done) {
+        const ObjectID = require('mongodb').ObjectID,
+            dbModels = require('../server/db/models');
+        var createObjectIdStub;
+        before(function () {
             mongoose.Promise = global.Promise;
-            if (mongoose.connection.db) return done();
-            mongoose.connect(dbURI, done);
-            //initDB(insertDocsInSequential, done);
-            //initDB(insertDocsInParallel, done);
         });
 
-        it('Db object saver', function () {
-            var dbSchema = new mongoose.Schema({
-                "foo": String,
-                "fee": String
-            });
-            Schema = mongoose.model('coll', dbSchema);
-            var save = finelets.db.mongoDb.save;
-
-            dataToAdd = {foo: "foo", fee: "fee"};
-            return save(Schema, dataToAdd)
-                .then(function (data) {
-                    expect(data).not.null;
-                })
+        beforeEach(function (done) {
+            createObjectIdStub = sinon.stub();
+            stubs['@finelets/hyper-rest/db/mongoDb/CreateObjectId'] = createObjectIdStub;
+            clearDB(done);
         });
+
+        it('test', function () {
+            expect(1).eqls(1);
+        })
     });
-
-    it('test', function () {
-        //test for remote repo 5
-    })
 });
