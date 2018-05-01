@@ -17,19 +17,18 @@ logger.level = 'debug';
 require('dotenv').config();
 resourceRegistry.setTransitionGraph(transitionsGraph);
 
-var app = function () {
+var app = function() {
     //配置view engine
     var viewEngineFactory = finelets.express.handlebarsFactory(
         //按缺省规约：
         // partials目录为path.join(__dirname, './client/views') + '/partials'
         // views文件扩展名为'.hbs'
-        'hbs', path.join(__dirname, './client/views'),
-        {
+        'hbs', path.join(__dirname, './client/views'), {
             helpers: {
-                dateMMDD: function (timestamp) {
+                dateMMDD: function(timestamp) {
                     return moment(timestamp).format('MM-DD');
                 },
-                dateYYYYMMDD: function (timestamp) {
+                dateYYYYMMDD: function(timestamp) {
                     return moment(timestamp).format('YYYY-MM-DD');
                 }
             }
@@ -44,9 +43,9 @@ var app = function () {
         .setSessionStore(sessionStore)
         .end();
 
-    connectDb(function () {
+    connectDb(function() {
         logger.info('connect mongodb success .......');
-        var server = appBuilder.run(function () {
+        var server = appBuilder.run(function() {
             var addr = server.address();
             logger.info('the server is running and listening at ' + addr.port);
         });
