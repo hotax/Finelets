@@ -1,12 +1,35 @@
-/**
- * Created by clx on 2017/10/29.
- */
 module.exports = {
     Login: {
-        Quotor: "Quotor"
+        "sales": "Sales",
+        "quality reviewer": "QualityReviewer",
+        "financial reviewer": "FinancialReviewer",
+        "transportation reviewer": "TransportationReviewer"
     },
-    Quotor: {
-        //"search": "SearchQuotes",
+    Sales: {
+        "review draft orders": "DraftOrders",
+        "place order": 'DraftOrders',
         "exit": "Login"
+    },
+    DraftOrder: {
+        "edit": "DraftOrder",
+        "cancel": "DraftOrder"
+    },
+    QualityReviewer: {
+        "review": "DraftOrderQualityReviewLine"
+    },
+    DraftOrderToQualityReview: {
+        "review": "DraftOrderToQualityReview"
+    },
+    FinancialReviewer: {
+        "review": "DraftOrderFinancialReviewLine"
+    },
+    DraftOrderToFinancialReview: {
+        "review": "DraftOrderToFinancialReview"
+    },
+    TransportationReviewer: {
+        "review": "DraftOrderTransportationReviewLine"
+    },
+    DraftOrderToTransportationReview: {
+        "review": "DraftOrderToTransportationReview"
     }
-}
+};

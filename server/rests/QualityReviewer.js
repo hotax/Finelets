@@ -1,8 +1,5 @@
-/**
- * Created by clx on 2017/11/5.
- */
 module.exports = {
-    url: '/roles/quotor',
+    url: '/api/sales/roles/qualityReviewer',
     rests: [
         {
             type: 'entry'
