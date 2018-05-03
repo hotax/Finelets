@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@finelets/hyper-rest": "^1.2.12",
+        "amqplib": "^0.5.2",
         "bluebird": "^3.4.6",
         "dotenv": "^5.0.1",
         "log4js": "^2.5.3",

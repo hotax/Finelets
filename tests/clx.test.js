@@ -12,6 +12,32 @@ describe('Application', function () {
         stubs['@finelets/hyper-rest/app'] = {createErrorReason: createReasonStub};
     });
 
+    describe('System services', function () {
+        describe('基于RabbitMQ的消息中心实现', function () {
+            var messageCenter, msgType, msgData;
+            var consumer;
+            it('发布草拟订单消息', function (done) {
+                msgType = 'foo';
+                msgData = {msgData: 'any message data with the type of foo'};
+                consumer = sinon.spy();
+                messageCenter = require('../server/system/rabbitMQ/MessageCenter')({
+                    name: 'AnSteel',
+                    connectingStr: process.env.MQ,
+                    consumers: {
+                        foo: consumer
+                    }
+                });
+                setTimeout(function () {
+                    return messageCenter.publish(msgType, msgData)
+                        .then(function () {
+                            expect(consumer.calledWith(msgData).calledOnce);
+                            done();
+                        })
+                }, 5);
+            })
+        })
+    });
+
     describe('销售人员', function () {
         describe('草拟订单', function () {
             var sales, orderData, taskStatus;
