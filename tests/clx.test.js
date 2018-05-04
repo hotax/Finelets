@@ -4,6 +4,10 @@ const proxyquire = require('proxyquire'),
 
 describe('Application', function () {
     var func, stubs, err, reason, createReasonStub;
+    before(function () {
+        mongoose.Promise = global.Promise;
+    });
+
     beforeEach(function () {
         stubs = {};
         err = new Error('any error message');
@@ -39,6 +43,10 @@ describe('Application', function () {
                 dbSchema = require('../server/modules/sales/db/DbSchema');
             });
 
+            beforeEach(function () {
+                salesDb = require('../server/modules/sales/db/SalesDb');
+            });
+
             describe('新增订单', function () {
                 var orderData, order, dbSaverStub;
                 it('成功', function () {
@@ -51,6 +59,19 @@ describe('Application', function () {
                     return salesDb.createOrder(orderData)
                         .then(function (data) {
                             expect(data).eqls(order);
+                        })
+                })
+            });
+
+            describe('列出未锁定的订单草稿', function () {
+                beforeEach(function (done) {
+                    clearDB(done);
+                });
+
+                it('无任何记录', function () {
+                    return salesDb.listUnlockedDraftOrders()
+                        .then(function (data) {
+                            expect(data).eqls([]);
                         })
                 })
             });
