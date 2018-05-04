@@ -12,24 +12,26 @@ describe('Application', function () {
         stubs['@finelets/hyper-rest/app'] = {createErrorReason: createReasonStub};
     });
 
-    describe('销售人员', function () {
-        describe('草拟订单', function () {
-            var sales, orderData, taskStatus;
-            var messageSendor;
-            it('成功', function () {
-                orderData = {orderData: 'any order data'};
-                taskStatus = {taskStatus: 'any taskStatus'};
-                messageSendor = {
-                    draftSalesOrder: sinon.stub()
-                };
-                messageSendor.draftSalesOrder.withArgs(orderData).returns(Promise.resolve(taskStatus));
-                sales = require('../server/modules/sales/Sales')(messageSendor);
-                return sales.draftOrder(orderData)
-                    .then(function (data) {
-                        expect(data).eqls(taskStatus);
-                    })
-            });
-        })
+    describe('销售子系统', function () {
+        describe('销售人员', function () {
+            describe('草拟订单', function () {
+                var sales, orderData, taskStatus;
+                var messageSendor;
+                it('成功', function () {
+                    orderData = {orderData: 'any order data'};
+                    taskStatus = {taskStatus: 'any taskStatus'};
+                    messageSendor = {
+                        draftSalesOrder: sinon.stub()
+                    };
+                    messageSendor.draftSalesOrder.withArgs(orderData).returns(Promise.resolve(taskStatus));
+                    sales = require('../server/modules/sales/Sales')(messageSendor);
+                    return sales.draftOrder(orderData)
+                        .then(function (data) {
+                            expect(data).eqls(taskStatus);
+                        })
+                });
+            })
+        });
     });
 
     describe('数据库', function () {
