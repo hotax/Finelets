@@ -32,9 +32,32 @@ describe('Application', function () {
                 });
             })
         });
+
+        describe('销售数据库', function () {
+            var salesDb, dbSchema;
+            before(function () {
+                dbSchema = require('../server/modules/sales/db/DbSchema');
+            });
+
+            describe('新增订单', function () {
+                var orderData, order, dbSaverStub;
+                it('成功', function () {
+                    orderData = {orderData: 'any data of order'};
+                    order = {order: 'order data from db'};
+                    dbSaverStub = sinon.stub();
+                    dbSaverStub.withArgs(dbSchema.SalesOrder, orderData).returns(Promise.resolve(order));
+                    stubs['@finelets/hyper-rest/db/mongoDb/SaveObjectToDb'] = dbSaverStub;
+                    salesDb = proxyquire('../server/modules/sales/db/SalesDb', stubs);
+                    return salesDb.createOrder(orderData)
+                        .then(function (data) {
+                            expect(data).eqls(order);
+                        })
+                })
+            });
+        });
     });
 
-    describe('数据库', function () {
+    xdescribe('数据库', function () {
         const ObjectID = require('mongodb').ObjectID,
             dbModels = require('../server/db/models');
         var createObjectIdStub;
@@ -48,8 +71,12 @@ describe('Application', function () {
             clearDB(done);
         });
 
-        it('test', function () {
-            expect(1).eqls(1);
-        })
+        describe('销售数据库', function () {
+            describe('新增订单', function () {
+                xit('test', function () {
+                    expect(1).eqls(1);
+                })
+            });
+        });
     });
 });
