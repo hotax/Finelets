@@ -29,7 +29,25 @@ describe('Application', function () {
                         expect(data).eqls(taskStatus);
                     })
             });
-        })
+        });
+
+        describe('可提交评审订单草稿线', function () {
+            var reviewableLine, db, orders;
+            describe('列出可提交评审的订单', function () {
+                it('成功', function () {
+                    orders = {orders: 'any data of reviewable order from db'};
+                    db = {
+                        listUnlockedDraftOrders: sinon.stub()
+                    };
+                    db.listUnlockedDraftOrders.withArgs().returns(Promise.resolve(orders));
+                    reviewableLine = require('../server/modules/sales/ReviewableDraftOrdersLine')(db);
+                    return reviewableLine.list()
+                        .then(function (value) {
+                            expect(value).eqls(orders);
+                        })
+                })
+            });
+        });
     });
 
     describe('数据库', function () {
