@@ -1,3 +1,4 @@
+const statusValue = require('./SalesOrderStatus');
 const mongoose = require('mongoose'),
     Schema = mongoose.Schema,
     transformOption = require("@finelets/hyper-rest/db/mongoDb/DocTransformOption");
@@ -62,6 +63,7 @@ const SalesOrderSchema = new Schema({
     "items": [OrderItemSchema],
     "review": ReviewSchema,
     "sales": String,
+    "status": {type: Number, default: statusValue.statusValues.DRAFT},
     "createDate": {type: Date, default: Date.now, required: true},
     "modifiedDate": {type: Date, default: Date.now, required: true}
 },  transformOption);

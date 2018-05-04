@@ -38,9 +38,9 @@ describe('Application', function () {
         });
 
         describe('销售数据库', function () {
-            var salesDb, dbSchema;
+            var salesDb, dbModels;
             before(function () {
-                dbSchema = require('../server/modules/sales/db/DbSchema');
+                dbModels = require('../server/modules/sales/db/DbModels');
             });
 
             beforeEach(function () {
@@ -53,7 +53,7 @@ describe('Application', function () {
                     orderData = {orderData: 'any data of order'};
                     order = {order: 'order data from db'};
                     dbSaverStub = sinon.stub();
-                    dbSaverStub.withArgs(dbSchema.SalesOrder, orderData).returns(Promise.resolve(order));
+                    dbSaverStub.withArgs(dbModels.SalesOrder, orderData).returns(Promise.resolve(order));
                     stubs['@finelets/hyper-rest/db/mongoDb/SaveObjectToDb'] = dbSaverStub;
                     salesDb = proxyquire('../server/modules/sales/db/SalesDb', stubs);
                     return salesDb.createOrder(orderData)
@@ -73,7 +73,20 @@ describe('Application', function () {
                         .then(function (data) {
                             expect(data).eqls([]);
                         })
-                })
+                });
+
+                it('正常', function () {
+                    var orderStatus = require('../server/modules/sales/db/models/SalesOrderStatus');
+                    var order = {productLine: 'foo', status: orderStatus.statusValues.DRAFT};
+                    return dbSave(dbModels.SalesOrder, order)
+                        .then(function (data) {
+                            order = {id: data.id, status: order.status};
+                            return salesDb.listUnlockedDraftOrders(['status']);
+                        })
+                        .then(function (data) {
+                            expect(data).eqls([order]);
+                        })
+                });
             });
         });
     });
