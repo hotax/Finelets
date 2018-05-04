@@ -7,33 +7,51 @@ describe('Application', function () {
     beforeEach(function () {
         stubs = {};
         err = new Error('any error message');
-        reason = {reason: 'any reason representing any error'}
+        reason = {reason: 'any reason representing any error'};
         createReasonStub = sinon.stub();
         stubs['@finelets/hyper-rest/app'] = {createErrorReason: createReasonStub};
     });
 
     describe('System services', function () {
         describe('基于RabbitMQ的消息中心实现', function () {
-            var messageCenter, msgType, msgData;
-            var consumer;
-            it('发布草拟订单消息', function (done) {
-                msgType = 'foo';
-                msgData = {msgData: 'any message data with the type of foo'};
-                consumer = sinon.spy();
-                messageCenter = require('../server/system/rabbitMQ/MessageCenter')({
+            var messageCenter;
+            beforeEach(function () {
+                var logger = require('@finelets/hyper-rest/app/Logger');
+                return require('../server/system/MQ/RabbitMQImple')({
                     name: 'AnSteel',
                     connectingStr: process.env.MQ,
                     consumers: {
-                        foo: consumer
+                        foo: function (msg) {
+                            logger.info("look, the message was dealed with: " + JSON.stringify(msg));
+                        }
                     }
-                });
-                setTimeout(function () {
-                    return messageCenter.publish(msgType, msgData)
-                        .then(function () {
-                            expect(consumer.calledWith(msgData).calledOnce);
-                            done();
-                        })
-                }, 5);
+                })
+                    .then(function (obj) {
+                        messageCenter = obj;
+                    });
+            });
+
+            it('发布草拟订单消息', function () {
+                messageCenter.publish('foo', {msgData: 'any message data with the type of foo'});
+                // 向消息中心发布消息后，由于无法确定消息将在何时得到处理，所以我们只有采用查看日志的方式
+                // 确认消息确实获得了处理！！！
+            });
+        });
+
+        describe('消息中心', function () {
+            var messageCenter, mqMock;
+            var orderData;
+            beforeEach(function () {
+                orderData = {orderData: 'draft order raw data'};
+                mqMock = {
+                    publish: sinon.spy()
+                };
+                messageCenter = require('../server/system/MQ/MessageCenter')(mqMock);
+            });
+
+            it('发布草拟订单消息', function () {
+                messageCenter.draftSalesOrder(orderData);
+                expect(mqMock.publish.calledWith('draftSalesOrder', orderData).calledOnce);
             })
         })
     });
