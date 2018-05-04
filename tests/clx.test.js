@@ -64,7 +64,10 @@ describe('Application', function () {
             });
 
             describe('列出未锁定的订单草稿', function () {
+                var orderStatus, order;
                 beforeEach(function (done) {
+                    orderStatus = require('../server/modules/sales/db/models/SalesOrderStatus');
+                    order = {productLine: 'foo', status: orderStatus.statusValues.DRAFT};
                     clearDB(done);
                 });
 
@@ -75,9 +78,18 @@ describe('Application', function () {
                         })
                 });
 
+                it('排除已锁定等其他非订单草稿', function () {
+                    order.status = order.status | orderStatus.statusValues.LOCKED;
+                    return dbSave(dbModels.SalesOrder, order)
+                        .then(function () {
+                            return salesDb.listUnlockedDraftOrders(['status']);
+                        })
+                        .then(function (data) {
+                            expect(data).eqls([]);
+                        })
+                });
+
                 it('正常', function () {
-                    var orderStatus = require('../server/modules/sales/db/models/SalesOrderStatus');
-                    var order = {productLine: 'foo', status: orderStatus.statusValues.DRAFT};
                     return dbSave(dbModels.SalesOrder, order)
                         .then(function (data) {
                             order = {id: data.id, status: order.status};

@@ -1,4 +1,5 @@
 const dbSave = require('@finelets/hyper-rest/db/mongoDb/SaveObjectToDb'),
+    orderStatusValue = require('./models/SalesOrderStatus'),
     dbSchema = require('./DbModels');
 
 module.exports = {
@@ -7,7 +8,7 @@ module.exports = {
     },
     listUnlockedDraftOrders: function (fields) {
         var results = [];
-        return dbSchema.SalesOrder.find()
+        return dbSchema.SalesOrder.find({status: orderStatusValue.statusValues.DRAFT})
             .select(fields)
             .exec()
             .then(function (data) {
