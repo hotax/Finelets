@@ -37,7 +37,8 @@ describe('Application', function () {
                         return sales.draftOrder(orderData)
                             .then(function (data) {
                                 expect(data).eqls(order);
-                                expect(messageSendor.draftSalesOrder).calledWith(order).calledOnce;
+                                expect(messageSendor.draftSalesOrder).calledOnce;
+                                expect(messageSendor.draftSalesOrder).calledWith(order);
                             })
                     });
                 });
@@ -50,6 +51,7 @@ describe('Application', function () {
                         orders = [orderId1, orderId2];
                         return sales.commitDraftOrderToPreview(orders)
                             .then(function () {
+                                expect(messageSendor.commitDraftSalesOrderToPreview).calledTwice;
                                 expect(messageSendor.commitDraftSalesOrderToPreview).calledWith(orderId1);
                                 expect(messageSendor.commitDraftSalesOrderToPreview).calledWith(orderId2);
                             })
