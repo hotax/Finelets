@@ -30,3 +30,25 @@ application scaffold from github.
     ```
     node server.js
     ```
+
+### Branches
+- master - The scaffold of @Finelets based application. you can start a your 
+application from there.
+
+- Ansteel -  A demo application branch.
+
+    - ProjectManager - "Role branch", include all kinds of document about project
+     management, requirement, designs etc.
+     
+    - system - "Role branch", the role of technical platform or component 
+                development for application.
+     
+    - Sales - Sales subsystem branch.
+        - SalesServices - "Role branch", the role of restful services 
+                          development for Sales subsystem.
+    
+        - bizModules - "Role branch", the role of application logic 
+                        development for Sales subsystem.
+                        
+        - SalesDb - "Role branch", the role of database 
+                     development for Sales subsystem
