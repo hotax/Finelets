@@ -13,41 +13,66 @@ describe('Application', function () {
     });
 
     describe('销售子系统', function () {
-        describe('销售人员', function () {
-            describe('草拟订单', function () {
-                var sales, orderData, taskStatus;
-                var messageSendor;
-                it('成功', function () {
-                    orderData = {orderData: 'any order data'};
-                    taskStatus = {taskStatus: 'any taskStatus'};
+        describe('业务逻辑', function () {
+            describe('销售人员', function () {
+                var sales, orderFactory, messageSendor;
+                beforeEach(function () {
+                    orderFactory = {
+                        create: sinon.stub()
+                    };
                     messageSendor = {
-                        draftSalesOrder: sinon.stub()
+                        draftSalesOrder: sinon.spy(),
+                        commitDraftSalesOrderToPreview: sinon.spy()
                     };
-                    messageSendor.draftSalesOrder.withArgs(orderData).returns(Promise.resolve(taskStatus));
-                    sales = require('../server/modules/sales/Sales')(messageSendor);
-                    return sales.draftOrder(orderData)
-                        .then(function (data) {
-                            expect(data).eqls(taskStatus);
-                        })
+                    sales = require('../server/modules/sales/Sales')(messageSendor, orderFactory);
                 });
-            });
-        });
 
-        describe('可提交评审订单草稿线', function () {
-            var reviewableLine, db, orders;
-            describe('列出可提交评审的订单', function () {
-                it('成功', function () {
-                    orders = {orders: 'any data of reviewable order from db'};
-                    db = {
-                        listUnlockedDraftOrders: sinon.stub()
-                    };
-                    db.listUnlockedDraftOrders.withArgs().returns(Promise.resolve(orders));
-                    reviewableLine = require('../server/modules/sales/ReviewableDraftOrdersLine')(db);
-                    return reviewableLine.list()
-                        .then(function (value) {
-                            expect(value).eqls(orders);
-                        })
+                describe('草拟订单', function () {
+                    var orderData, order;
+                    it('成功', function () {
+                        orderData = {orderData: 'any raw data of draft order'};
+                        order = {order: 'any data of order raw'};
+                        orderFactory.create.withArgs(orderData).returns(Promise.resolve(order));
+
+                        return sales.draftOrder(orderData)
+                            .then(function (data) {
+                                expect(data).eqls(order);
+                                expect(messageSendor.draftSalesOrder).calledWith(order).calledOnce;
+                            })
+                    });
+                });
+
+                describe('订单草稿提交评审', function () {
+                    var orders, orderId1, orderId2;
+                    it('成功', function () {
+                        orderId1 = 'foo';
+                        orderId2 = 'fuu';
+                        orders = [orderId1, orderId2];
+                        return sales.commitDraftOrderToPreview(orders)
+                            .then(function () {
+                                expect(messageSendor.commitDraftSalesOrderToPreview).calledWith(orderId1);
+                                expect(messageSendor.commitDraftSalesOrderToPreview).calledWith(orderId2);
+                            })
+                    });
                 })
+            });
+
+            describe('可提交评审订单草稿线', function () {
+                var reviewableLine, db, orders;
+                describe('列出可提交评审的订单', function () {
+                    it('成功', function () {
+                        orders = {orders: 'any data of reviewable order from db'};
+                        db = {
+                            listUnlockedDraftOrders: sinon.stub()
+                        };
+                        db.listUnlockedDraftOrders.withArgs().returns(Promise.resolve(orders));
+                        reviewableLine = require('../server/modules/sales/ReviewableDraftOrdersLine')(db);
+                        return reviewableLine.list()
+                            .then(function (value) {
+                                expect(value).eqls(orders);
+                            })
+                    })
+                });
             });
         });
     });
