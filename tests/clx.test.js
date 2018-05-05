@@ -52,7 +52,6 @@ describe('Application', function () {
         });
     });
 
-
     describe('数据库', function () {
         const ObjectID = require('mongodb').ObjectID,
             dbModels = require('../server/db/models');
