@@ -55,43 +55,4 @@ describe('Application', function () {
             })
         })
     });
-
-    describe('销售人员', function () {
-        describe('草拟订单', function () {
-            var sales, orderData, taskStatus;
-            var messageSendor;
-            it('成功', function () {
-                orderData = {orderData: 'any order data'};
-                taskStatus = {taskStatus: 'any taskStatus'};
-                messageSendor = {
-                    draftSalesOrder: sinon.stub()
-                };
-                messageSendor.draftSalesOrder.withArgs(orderData).returns(Promise.resolve(taskStatus));
-                sales = require('../server/modules/sales/Sales')(messageSendor);
-                return sales.draftOrder(orderData)
-                    .then(function (data) {
-                        expect(data).eqls(taskStatus);
-                    })
-            });
-        })
-    });
-
-    describe('数据库', function () {
-        const ObjectID = require('mongodb').ObjectID,
-            dbModels = require('../server/db/models');
-        var createObjectIdStub;
-        before(function () {
-            mongoose.Promise = global.Promise;
-        });
-
-        beforeEach(function (done) {
-            createObjectIdStub = sinon.stub();
-            stubs['@finelets/hyper-rest/db/mongoDb/CreateObjectId'] = createObjectIdStub;
-            clearDB(done);
-        });
-
-        it('test', function () {
-            expect(1).eqls(1);
-        })
-    });
 });
