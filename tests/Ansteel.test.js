@@ -11,9 +11,32 @@ describe('Application', function () {
     beforeEach(function () {
         stubs = {};
         err = new Error('any error message');
-        reason = {reason: 'any reason representing any error'}
+        reason = {reason: 'any reason representing any error'};
         createReasonStub = sinon.stub();
         stubs['@finelets/hyper-rest/app'] = {createErrorReason: createReasonStub};
+    });
+
+    describe('有限状态机', function () {
+        var stateMachine, graph, toState;
+        beforeEach(function () {
+            graph = {
+                create: sinon.stub(),
+                get: sinon.stub()
+            };
+            stateMachine = require('../server/system/StateMachine')(graph);
+        });
+
+        it('默认初始化状态为Initialized', function () {
+            var arg1 = 'arg1';
+            var arg2 = 'arg2';
+            toState = 'Initialized';
+            graph.create.withArgs(toState, arg1, arg2).returns(Promise.resolve(toState));
+            return stateMachine.init(arg1, arg2)
+                .then(function (data) {
+                    expect(data).eqls(toState);
+                })
+        })
+
     });
 
     describe('订单生命周期', function () {
