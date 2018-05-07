@@ -11,7 +11,6 @@
         "bluebird": "^3.4.6",
         "dotenv": "^5.0.1",
         "log4js": "^2.5.3",
-        "machina": "^2.0.2",
         "moment": "^2.22.1",
         "mongodb": "^3.0.7",
         "mongoose": "^5.0.17",
