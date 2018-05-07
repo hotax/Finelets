@@ -35,6 +35,16 @@ describe('Application', function () {
                 .then(function (data) {
                     expect(data).eqls(toState);
                 })
+        });
+
+        it('定义初始化状态', function () {
+            toState = 'foo';
+            graph.initialState = toState;
+            graph.create.withArgs(toState).returns(Promise.resolve(toState));
+            return stateMachine.init()
+                .then(function (data) {
+                    expect(data).eqls(toState);
+                })
         })
 
     });
