@@ -41,56 +41,64 @@ describe('Application', function () {
                 })
         });
 
-        it('在草稿状态下收到toReview消息，进入评审状态', function () {
-            orderStatusMock.get.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.DRAFT));
-            orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.LOCKED));
-            return orderLifeCycle.handle(orderId, 'toReview')
-                .then(function (data) {
-                    expect(data).eqls('Review');
-                })
+        describe('各状态下的状态迁移', function () {
+            const testTransitions = function (fromOrderState, msg, toState, toOrderState) {
+                orderStatusMock.get.withArgs(orderId).returns(Promise.resolve(fromOrderState));
+                orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(toOrderState));
+                return orderLifeCycle.handle(orderId, msg)
+                    .then(function (data) {
+                        expect(data).eqls(toState);
+                    })
+            };
+
+            it('在草稿状态下收到toReview消息，进入评审状态', function () {
+                return testTransitions(orderStatusConstants.statusValues.DRAFT, 'toReview',
+                    'Review', orderStatusConstants.statusValues.Review);
+            });
+
+            it('在草稿状态下收到toCancel消息，进入终止状态', function () {
+                return testTransitions(orderStatusConstants.statusValues.DRAFT, 'toCancel',
+                    'Cancel', orderStatusConstants.statusValues.CANCEL);
+            });
+
+            it('在评审通过的状态下收到toPublish消息，进入执行状态', function () {
+                return testTransitions(orderStatusConstants.statusValues.PASSED, 'toPublish',
+                    'Running', orderStatusConstants.statusValues.RUNNING);
+            });
+
+            it('在执行状态下收到clear消息，进入结案状态', function () {
+                return testTransitions(orderStatusConstants.statusValues.RUNNING, 'clear',
+                    'Cleared', orderStatusConstants.statusValues.CLEARED);
+            });
         });
 
-        it('在评审状态下收到finishReview消息 - 尚未总体完成评审，保持评审状态', function () {
-            var reviewData = {review: 'any data of review'};
-            orderStatusMock.get.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.LOCKED));
-            orderStatusMock.isReviewsFinished.withArgs(orderId, reviewData).returns(Promise.resolve('no'));
-            return orderLifeCycle.handle(orderId, 'finishReview', reviewData)
-                .then(function (data) {
-                    expect(data).eqls('Review');
-                })
-        });
+        describe('在评审状态下收到finishReview消息', function () {
+            var reviewData;
+            const testOnReviewState = function (isFinished, toState, orderState) {
+                orderStatusMock.isReviewsFinished.withArgs(orderId, reviewData).returns(Promise.resolve(isFinished));
+                if(orderState) orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(orderState));
 
-        it('在评审状态下收到finishReview消息 - 总体通过评审，进入评审通过状态', function () {
-            var reviewData = {review: 'any data of review'};
-            orderStatusMock.get.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.LOCKED));
-            orderStatusMock.isReviewsFinished.withArgs(orderId, reviewData).returns(Promise.resolve('passed'));
-            orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.PASSED));
+                return orderLifeCycle.handle(orderId, 'finishReview', reviewData)
+                    .then(function (data) {
+                        expect(data).eqls(toState);
+                    })
+            };
+            beforeEach(function () {
+                reviewData = {review: 'any data of review'};
+                orderStatusMock.get.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.LOCKED));
+            });
 
-            return orderLifeCycle.handle(orderId, 'finishReview', reviewData)
-                .then(function (data) {
-                    expect(data).eqls('Passed');
-                })
-        });
+            it('尚未总体完成评审，保持评审状态', function () {
+                return testOnReviewState('no', 'Review');
+            });
 
-        it('在评审状态下收到finishReview消息 - 总体未通过评审，进入草稿状态', function () {
-            var reviewData = {review: 'any data of review'};
-            orderStatusMock.get.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.LOCKED));
-            orderStatusMock.isReviewsFinished.withArgs(orderId, reviewData).returns(Promise.resolve('refused'));
-            orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.DRAFT));
+            it('总体通过评审，进入评审通过状态', function () {
+                return testOnReviewState('passed', 'Passed', orderStatusConstants.statusValues.PASSED);
+            });
 
-            return orderLifeCycle.handle(orderId, 'finishReview', reviewData)
-                .then(function (data) {
-                    expect(data).eqls('Draft');
-                })
-        });
-
-        it('在评审通过的状态下收到toPublish消息，进入执行状态', function () {
-            orderStatusMock.get.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.PASSED));
-            orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(orderStatusConstants.statusValues.RUNNING));
-            return orderLifeCycle.handle(orderId, 'toPublish')
-                .then(function (data) {
-                    expect(data).eqls('Running');
-                })
+            it('总体未通过评审，进入草稿状态', function () {
+                return testOnReviewState('refused', 'Draft', orderStatusConstants.statusValues.DRAFT);
+            });
         });
 
     })

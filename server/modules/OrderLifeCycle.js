@@ -29,7 +29,9 @@ const __stateGraph = {
         Draft: orderStatusConstants.statusValues.DRAFT,
         Review: orderStatusConstants.statusValues.LOCKED,
         Passed: orderStatusConstants.statusValues.PASSED,
-        Running: orderStatusConstants.statusValues.RUNNING
+        Running: orderStatusConstants.statusValues.RUNNING,
+        Cancel: orderStatusConstants.statusValues.CANCEL,
+        Cleared: orderStatusConstants.statusValues.CLEARED
     }
 };
 
