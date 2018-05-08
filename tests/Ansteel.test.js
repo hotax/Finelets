@@ -17,18 +17,45 @@ describe('Application', function () {
     });
 
     describe('有限状态机', function () {
-        var stateMachine, graph, toState;
+        var stateMachine, graph, fromState, toState;
+        var msg, arg1, arg2;
         beforeEach(function () {
+            arg1 = 'arg1';
+            arg2 = 'arg2';
+            msg = 'message';
             graph = {
+                states:{
+                },
                 create: sinon.stub(),
-                get: sinon.stub()
+                get: sinon.stub(),
+                update: sinon.stub()
             };
             stateMachine = require('../server/system/StateMachine')(graph);
         });
 
+        /*it('状态迁移图中未定义create创建状态方法', function () {
+            stateMachine = require('../server/system/StateMachine')({});
+            return stateMachine.init()
+                .then(function (data) {
+                    throw 'test failed';
+                })
+                .catch(function (e) {
+                    expect(e.message).eqls('A create method is missed in state graph');
+                })
+        });
+
+        it('状态迁移图中定义的create不是一个Function', function () {
+            stateMachine = require('../server/system/StateMachine')({create: 'I am not a function'});
+            return stateMachine.init()
+                .then(function () {
+                    throw 'test failed';
+                })
+                .catch(function (e) {
+                    expect(e.message).eqls('The create is not a function');
+                })
+        });*/
+
         it('默认初始化状态为Initialized', function () {
-            var arg1 = 'arg1';
-            var arg2 = 'arg2';
             toState = 'Initialized';
             graph.create.withArgs(toState, arg1, arg2).returns(Promise.resolve(toState));
             return stateMachine.init(arg1, arg2)
@@ -45,8 +72,66 @@ describe('Application', function () {
                 .then(function (data) {
                     expect(data).eqls(toState);
                 })
-        })
+        });
 
+        it('未定义当前状态的迁移路线时略过处理', function () {
+            fromState = 'foo';
+            graph.update = sinon.spy();
+            graph.get.withArgs(arg1).returns(Promise.resolve(fromState));
+            return stateMachine.handle(msg, arg1)
+                .then(function (state) {
+                    expect(state).eqls(fromState);
+                    expect(graph.update.notCalled).true;
+                })
+        });
+
+        it('当前状态下无指定消息的迁移路线时略过处理', function () {
+            fromState = 'foo';
+            graph.states[fromState] = {};
+            graph.update = sinon.spy();
+            graph.get.withArgs(arg1).returns(Promise.resolve(fromState));
+            return stateMachine.handle(msg, arg1)
+                .then(function (state) {
+                    expect(state).eqls(fromState);
+                    expect(graph.update.notCalled).true;
+                })
+        });
+
+        it('当前状态下发生特定状态迁移', function () {
+            fromState = 'foo';
+            toState = 'fee';
+            graph.states[fromState] = {message: toState};
+            graph.update.withArgs(toState, arg1).returns(Promise.resolve(toState));
+            graph.get.withArgs(arg1).returns(Promise.resolve(fromState));
+            return stateMachine.handle(msg, arg1)
+                .then(function (state) {
+                    expect(state).eqls(toState);
+                    expect(graph.update.calledOnce).true;
+                })
+        });
+
+        it('当前状态下发生条件状态迁移', function () {
+            fromState = 'foo';
+            toState = 'fff';
+            graph.choice = sinon.stub();
+            graph.choice.withArgs(msg, arg1).returns(Promise.resolve('fuu'));
+            graph.states[fromState] = {
+                message: {
+                    choiceBy: "choice",
+                    options: {
+                        fee: 'Review',
+                        fuu: toState
+                    }
+                }
+            };
+            graph.update.withArgs(toState, arg1).returns(Promise.resolve(toState));
+            graph.get.withArgs(arg1).returns(Promise.resolve(fromState));
+            return stateMachine.handle(msg, arg1)
+                .then(function (state) {
+                    expect(state).eqls(toState);
+                    expect(graph.update.calledOnce).true;
+                })
+        });
     });
 
     describe('订单生命周期', function () {
@@ -109,7 +194,7 @@ describe('Application', function () {
             var reviewData;
             const testOnReviewState = function (isFinished, toState, orderState) {
                 orderStatusMock.isReviewsFinished.withArgs(orderId, reviewData).returns(Promise.resolve(isFinished));
-                if(orderState) orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(orderState));
+                if (orderState) orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(orderState));
 
                 return orderLifeCycle.handle(orderId, 'finishReview', reviewData)
                     .then(function (data) {
