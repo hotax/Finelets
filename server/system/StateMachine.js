@@ -8,8 +8,8 @@ module.exports = function (graph) {
             //if(!graph.create) return Promise.reject(new Error('A create method is missed in state graph'));
             //if(!_.isFunction(graph.create)) return Promise.reject(new Error('The create is not a function'));
             return graph.create.apply(null, [state].concat(Array.from(arguments)))
-                .then(function () {
-                    return state;
+                .then(function (data) {
+                    return data;
                 })
         },
         handle: function () {
@@ -28,15 +28,17 @@ module.exports = function (graph) {
                             })) {
                             dest = graph.states[state][msg];
                             if(_.isObject(dest)){
-                                return graph[dest.choiceBy].apply(null, [msg].concat(args))
+                                return graph[dest.choiceBy].apply(null, args)
                                     .then(function (ops) {
                                         dest = dest.options[ops];
-                                        return graph.update.apply(null, [dest].concat(args));
+                                        return dest !== state ?
+                                            graph.update.apply(null, [state, dest].concat(args)) :
+                                            state;
                                     })
                             }
                         }
                     }
-                    return dest ? graph.update.apply(null, [dest].concat(args)) : state
+                    return dest ? graph.update.apply(null, [state, dest].concat(args)) : state
                 })
         }
     }

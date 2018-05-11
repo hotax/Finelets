@@ -17,12 +17,13 @@ describe('Application', function () {
     });
 
     describe('有限状态机', function () {
-        var stateMachine, graph, fromState, toState;
+        var stateMachine, graph, fromState, toState, stateObject;
         var msg, arg1, arg2;
         beforeEach(function () {
             arg1 = 'arg1';
             arg2 = 'arg2';
             msg = 'message';
+            stateObject = {stateObject: 'any data of state object'};
             graph = {
                 states:{
                 },
@@ -57,20 +58,20 @@ describe('Application', function () {
 
         it('默认初始化状态为Initialized', function () {
             toState = 'Initialized';
-            graph.create.withArgs(toState, arg1, arg2).returns(Promise.resolve(toState));
+            graph.create.withArgs(toState, arg1, arg2).returns(Promise.resolve(stateObject));
             return stateMachine.init(arg1, arg2)
                 .then(function (data) {
-                    expect(data).eqls(toState);
+                    expect(data).eqls(stateObject);
                 })
         });
 
         it('定义初始化状态', function () {
             toState = 'foo';
             graph.initialState = toState;
-            graph.create.withArgs(toState).returns(Promise.resolve(toState));
+            graph.create.withArgs(toState).returns(Promise.resolve(stateObject));
             return stateMachine.init()
                 .then(function (data) {
-                    expect(data).eqls(toState);
+                    expect(data).eqls(stateObject);
                 })
         });
 
@@ -101,11 +102,11 @@ describe('Application', function () {
             fromState = 'foo';
             toState = 'fee';
             graph.states[fromState] = {message: toState};
-            graph.update.withArgs(toState, arg1).returns(Promise.resolve(toState));
+            graph.update.withArgs(fromState, toState, arg1).returns(Promise.resolve(stateObject));
             graph.get.withArgs(arg1).returns(Promise.resolve(fromState));
             return stateMachine.handle(msg, arg1)
                 .then(function (state) {
-                    expect(state).eqls(toState);
+                    expect(state).eqls(stateObject);
                     expect(graph.update.calledOnce).true;
                 })
         });
@@ -114,7 +115,7 @@ describe('Application', function () {
             fromState = 'foo';
             toState = 'fff';
             graph.choice = sinon.stub();
-            graph.choice.withArgs(msg, arg1).returns(Promise.resolve('fuu'));
+            graph.choice.withArgs(arg1).returns(Promise.resolve('fuu'));
             graph.states[fromState] = {
                 message: {
                     choiceBy: "choice",
@@ -124,81 +125,108 @@ describe('Application', function () {
                     }
                 }
             };
-            graph.update.withArgs(toState, arg1).returns(Promise.resolve(toState));
+            graph.update.withArgs(fromState, toState, arg1).returns(Promise.resolve(stateObject));
             graph.get.withArgs(arg1).returns(Promise.resolve(fromState));
             return stateMachine.handle(msg, arg1)
                 .then(function (state) {
-                    expect(state).eqls(toState);
+                    expect(state).eqls(stateObject);
                     expect(graph.update.calledOnce).true;
+                })
+        });
+
+        it('当前状态下发生条件状态迁移，但目标状态与当前状态相同时，则无需更新', function () {
+            fromState = 'foo';
+            graph.choice = sinon.stub();
+            graph.choice.withArgs(arg1).returns(Promise.resolve('fuu'));
+            graph.states[fromState] = {
+                message: {
+                    choiceBy: "choice",
+                    options: {
+                        fee: 'Review',
+                        fuu: fromState
+                    }
+                }
+            };
+            graph.get.withArgs(arg1).returns(Promise.resolve(fromState));
+            return stateMachine.handle(msg, arg1)
+                .then(function (state) {
+                    expect(state).eqls(fromState);
+                    expect(graph.update.notCalled).true;
                 })
         });
     });
 
     describe('订单生命周期', function () {
-        var orderLifeCycle, messageTypeConstants;
+        var orderLifeCycle, stateMachineFactory;
         var orderStatusMock, orderStatusConstants;
-        var orderId;
+        var orderId, orderState;
         beforeEach(function () {
-            messageTypeConstants = require('../server/MessageTypeConstants');
+            stateMachineFactory = require('../server/system/StateMachine');
             orderStatusConstants = require('../server/modules/sales/db/models/SalesOrderStatus');
             orderId = "foo";
+            orderState = {orderState: 'any data of order state object'};
             orderStatusMock = {
                 create: sinon.stub(),
                 get: sinon.stub(),
                 update: sinon.stub(),
                 isReviewsFinished: sinon.stub()
             };
-            orderLifeCycle = require('../server/modules/OrderLifeCycle')(orderStatusMock);
+            orderLifeCycle = require('../server/modules/OrderLifeCycle')(stateMachineFactory, orderStatusMock);
         });
 
         it('初始化，进入草稿状态', function () {
-            orderStatusMock.create.withArgs(orderId, orderStatusConstants.statusValues.DRAFT).returns(Promise.resolve());
+            orderStatusMock.create.withArgs(orderId, orderStatusConstants.statusValues.DRAFT)
+                .returns(Promise.resolve(orderState));
             return orderLifeCycle.init(orderId)
                 .then(function (data) {
-                    expect(data).eqls('Draft');
+                    expect(data).eqls(orderState);
                 })
         });
 
         describe('各状态下的状态迁移', function () {
-            const testTransitions = function (fromOrderState, msg, toState, toOrderState) {
+            const testTransitions = function (fromOrderState, msg, toOrderState) {
                 orderStatusMock.get.withArgs(orderId).returns(Promise.resolve(fromOrderState));
-                orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(toOrderState));
+                orderStatusMock.update.withArgs(orderId, fromOrderState, toOrderState).returns(Promise.resolve(orderState));
                 return orderLifeCycle.handle(orderId, msg)
                     .then(function (data) {
-                        expect(data).eqls(toState);
+                        expect(data).eqls(orderState);
                     })
             };
 
             it('在草稿状态下收到toReview消息，进入评审状态', function () {
                 return testTransitions(orderStatusConstants.statusValues.DRAFT, 'toReview',
-                    'Review', orderStatusConstants.statusValues.Review);
+                    orderStatusConstants.statusValues.LOCKED);
             });
 
             it('在草稿状态下收到toCancel消息，进入终止状态', function () {
                 return testTransitions(orderStatusConstants.statusValues.DRAFT, 'toCancel',
-                    'Cancel', orderStatusConstants.statusValues.CANCEL);
+                    orderStatusConstants.statusValues.CANCEL);
             });
 
             it('在评审通过的状态下收到toPublish消息，进入执行状态', function () {
                 return testTransitions(orderStatusConstants.statusValues.PASSED, 'toPublish',
-                    'Running', orderStatusConstants.statusValues.RUNNING);
+                    orderStatusConstants.statusValues.RUNNING);
             });
 
             it('在执行状态下收到clear消息，进入结案状态', function () {
                 return testTransitions(orderStatusConstants.statusValues.RUNNING, 'clear',
-                    'Cleared', orderStatusConstants.statusValues.CLEARED);
+                    orderStatusConstants.statusValues.CLEARED);
             });
         });
 
         describe('在评审状态下收到finishReview消息', function () {
             var reviewData;
-            const testOnReviewState = function (isFinished, toState, orderState) {
+            const testOnReviewState = function (isFinished, toOrderState) {
                 orderStatusMock.isReviewsFinished.withArgs(orderId, reviewData).returns(Promise.resolve(isFinished));
-                if (orderState) orderStatusMock.update.withArgs(orderId).returns(Promise.resolve(orderState));
-
+                if (toOrderState !== orderStatusConstants.statusValues.LOCKED){
+                    orderStatusMock.update.withArgs(orderId, orderStatusConstants.statusValues.LOCKED, toOrderState)
+                        .returns(Promise.resolve(orderState));
+                }
                 return orderLifeCycle.handle(orderId, 'finishReview', reviewData)
                     .then(function (data) {
-                        expect(data).eqls(toState);
+                        if(toOrderState !== orderStatusConstants.statusValues.LOCKED)
+                            expect(data).eqls(orderState);
+                        else expect(data).eqls(orderStatusConstants.statusValues.LOCKED);
                     })
             };
             beforeEach(function () {
@@ -207,15 +235,15 @@ describe('Application', function () {
             });
 
             it('尚未总体完成评审，保持评审状态', function () {
-                return testOnReviewState('no', 'Review');
+                return testOnReviewState('no', orderStatusConstants.statusValues.LOCKED);
             });
 
             it('总体通过评审，进入评审通过状态', function () {
-                return testOnReviewState('passed', 'Passed', orderStatusConstants.statusValues.PASSED);
+                return testOnReviewState('passed', orderStatusConstants.statusValues.PASSED);
             });
 
             it('总体未通过评审，进入草稿状态', function () {
-                return testOnReviewState('refused', 'Draft', orderStatusConstants.statusValues.DRAFT);
+                return testOnReviewState('refused', orderStatusConstants.statusValues.DRAFT);
             });
         });
 

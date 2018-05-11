@@ -25,56 +25,49 @@ const __stateGraph = {
             clear: 'Cleared'
         }
     },
-    stateMap: {
-        Draft: orderStatusConstants.statusValues.DRAFT,
-        Review: orderStatusConstants.statusValues.LOCKED,
-        Passed: orderStatusConstants.statusValues.PASSED,
-        Running: orderStatusConstants.statusValues.RUNNING,
-        Cancel: orderStatusConstants.statusValues.CANCEL,
-        Cleared: orderStatusConstants.statusValues.CLEARED
+    create: function (toState, orderId) {
+        return __orderMgr.create(orderId, stateMap[toState]);
+    },
+    get: function (orderId) {
+        return __orderMgr.get(orderId)
+            .then(function (data) {
+                var state = _.findKey(stateMap, function (v) {
+                    return v === data;
+                });
+                return state;
+            })
+    },
+    update: function (fromState, toState, orderId) {
+        return __orderMgr.update(orderId, stateMap[fromState], stateMap[toState]);
+    },
+    isReviewsFinished: function (orderId, review) {
+        return __orderMgr.isReviewsFinished(orderId, review);
     }
 };
 
+const stateMap = {
+    Draft: orderStatusConstants.statusValues.DRAFT,
+    Review: orderStatusConstants.statusValues.LOCKED,
+    Passed: orderStatusConstants.statusValues.PASSED,
+    Running: orderStatusConstants.statusValues.RUNNING,
+    Cancel: orderStatusConstants.statusValues.CANCEL,
+    Cleared: orderStatusConstants.statusValues.CLEARED
+};
 var __orderMgr;
+var __stateMachine;
 
-module.exports = function (orderMgr) {
+module.exports = function (stateMachineFactory, orderMgr) {
+    __stateMachine = stateMachineFactory(__stateGraph);
     __orderMgr = orderMgr;
     return {
         init: function (orderId) {
-            var status = __stateGraph.stateMap[__stateGraph.initialState];
-            return orderMgr.create(orderId, status)
-                .then(function () {
-                    return __stateGraph.initialState;
-                })
+            return __stateMachine.init(orderId);
         },
         handle: function (orderId, msg, msgData) {
-            var dest;
-            return orderMgr.get(orderId)
+            return __stateMachine.handle(msg, orderId, msgData)
                 .then(function (data) {
-                    var state = _.findKey(__stateGraph.stateMap, function (v) {
-                        return v === data;
-                    });
-                    var sm = __stateGraph.states[state];
-                    var status = null;
-                    if (sm) {
-                        dest = sm[msg];
-                        if (dest) {
-                            if(_.isObject(dest)){
-                                return orderMgr[dest.choiceBy](orderId, msgData)
-                                    .then(function (ops) {
-                                        dest = dest.options[ops];
-                                        if(dest === state){
-                                            return
-                                        }
-                                    })
-                            }
-                            status = __stateGraph.stateMap[dest];
-                        }
-                    }
-                    return status ? orderMgr.update(orderId, status) : Promise.reject(state);
-                })
-                .then(function () {
-                    return dest;
+                    var state = stateMap[data];
+                    return state ? state : data;
                 })
         }
     }
