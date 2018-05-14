@@ -7,5 +7,9 @@ module.exports = {
         PASSED: 2,
         DRAFT: 1,
         DRAFTING: 0
+    },
+    reviewType: {
+        QUALITY: 'Quality',
+        TRANSPORTATION: 'Transportation'
     }
 };

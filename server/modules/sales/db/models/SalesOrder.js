@@ -1,6 +1,7 @@
 const statusValue = require('./SalesOrderStatus');
 const mongoose = require('mongoose'),
     Schema = mongoose.Schema,
+    Review = require('./Review'),
     transformOption = require("@finelets/hyper-rest/db/mongoDb/DocTransformOption");
 
 const QuantitySchema = new Schema({
@@ -28,12 +29,6 @@ const PriceSchema = new Schema({
     "fee": Number
 }, transformOption);
 
-const ItemReviewSchema = new Schema({
-    "opinion": String,
-    "date": Date,
-    "pass": Boolean
-}, transformOption);
-
 const OrderItemSchema = new Schema({
     "no": String,
     "product": String,
@@ -41,18 +36,12 @@ const OrderItemSchema = new Schema({
     "qty": QuantitySchema,
     "transportation": TransportationSchema,
     "due": DueSchema,
-    "price": PriceSchema,
-    "qualityReview": ItemReviewSchema
+    "price": PriceSchema
 }, transformOption);
 
 const SettlementSchema = new Schema({
     "account": String,
     "taxType": String
-}, transformOption);
-
-const ReviewSchema = new Schema({
-    "quality": Boolean,
-    "transportation": Boolean
 }, transformOption);
 
 const SalesOrderSchema = new Schema({
@@ -61,7 +50,7 @@ const SalesOrderSchema = new Schema({
     "customer": String,
     "settlement": SettlementSchema,
     "items": [OrderItemSchema],
-    "review": ReviewSchema,
+    "reviews": [Review.schemas.Review],
     "sales": String,
     "status": {type: Number, default: statusValue.statusValues.DRAFTING},
     "createDate": {type: Date, default: Date.now, required: true},

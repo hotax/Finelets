@@ -8,12 +8,13 @@ describe('Application', function () {
         mongoose.Promise = global.Promise;
     });
 
-    beforeEach(function () {
+    beforeEach(function (done) {
         stubs = {};
         err = new Error('any error message');
         reason = {reason: 'any reason representing any error'};
         createReasonStub = sinon.stub();
         stubs['@finelets/hyper-rest/app'] = {createErrorReason: createReasonStub};
+        clearDB(done);
     });
 
     describe('有限状态机', function () {
@@ -253,11 +254,10 @@ describe('Application', function () {
         var orderStateMgr, dbModel, stateConst;
         var orderIdInDb;
 
-        beforeEach(function (done) {
+        beforeEach(function () {
             orderStateMgr = require('../server/modules/db/SalesOrderStates');
             dbModel = require('../server/modules/sales/db/DbModels').SalesOrder;
             stateConst = require('../server/modules/sales/db/models/SalesOrderStatus').statusValues;
-            clearDB(done)
         });
 
         describe('创建订单生命周期', function () {
@@ -335,6 +335,113 @@ describe('Application', function () {
                         expect(state).eqls(stateConst.LOCKED)
                     })
             })
+        });
+    });
+
+    describe('订单评审资料库', function () {
+        var orderReviewMgr, dbModel, reviewTypeConst;
+        var orderIdInDb, reviewData;
+
+        beforeEach(function () {
+            reviewTypeConst = require('../server/modules/sales/db/models/SalesOrderStatus').reviewType;
+            orderReviewMgr = require('../server/modules/db/SalesOrderReviews');
+            dbModel = require('../server/modules/sales/db/DbModels');
+            reviewData = {
+                type: reviewTypeConst.QUALITY,
+                pass: true,
+                comment: "comment",
+                opinions: []
+            }
+        });
+
+        it('指定订单不存在', function () {
+            return orderReviewMgr.commitReview('5af8fbb0add2862e58e5243b', reviewData)
+                .then(function () {
+                    throw 'test failed'
+                })
+                .catch(function (e) {
+                    expect(e.message).eqls('The order does not exist!');
+                })
+        });
+
+        it('包含上轮评审，本轮尚未总体结束', function () {
+            return dbSave(dbModel.SalesOrder, {
+                orderNo: '00001',
+                reviews: [
+                    {
+                        pass: false
+                    }
+                ]
+            })
+                .then(function (data) {
+                    orderIdInDb = data.id;
+                    return orderReviewMgr.commitReview(orderIdInDb, reviewData);
+                })
+                .then(function (data) {
+                    expect(data).eqls('no');
+                })
+        });
+
+        it('评审尚未总体结束', function () {
+            return dbSave(dbModel.SalesOrder, {orderNo: '00001'})
+                .then(function (data) {
+                    orderIdInDb = data.id;
+                    return orderReviewMgr.commitReview(orderIdInDb, reviewData);
+                })
+                .then(function (data) {
+                    expect(data).eqls('no');
+                })
+        });
+
+        it('评审总体未通过', function () {
+            reviewData.pass = false;
+            return dbSave(dbModel.SalesOrder, {
+                orderNo: '00001',
+                reviews: [
+                    {
+                        details: [
+                            {
+                                type: reviewTypeConst.TRANSPORTATION,
+                                pass: true,
+                                comment: "comment",
+                                opinions: []
+                            }
+                        ]
+                    }
+                ]
+            })
+                .then(function (data) {
+                    orderIdInDb = data.id;
+                    return orderReviewMgr.commitReview(orderIdInDb, reviewData);
+                })
+                .then(function (data) {
+                    expect(data).eqls('refused');
+                })
+        });
+
+        it('总体通过评审', function () {
+            return dbSave(dbModel.SalesOrder, {
+                orderNo: '00001',
+                reviews: [
+                    {
+                        details: [
+                            {
+                                type: reviewTypeConst.TRANSPORTATION,
+                                pass: true,
+                                comment: "comment",
+                                opinions: []
+                            }
+                        ]
+                    }
+                ]
+            })
+                .then(function (data) {
+                    orderIdInDb = data.id;
+                    return orderReviewMgr.commitReview(orderIdInDb, reviewData);
+                })
+                .then(function (data) {
+                    expect(data).eqls('passed');
+                })
         });
     })
 });
