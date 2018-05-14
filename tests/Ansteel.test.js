@@ -247,5 +247,40 @@ describe('Application', function () {
             });
         });
 
+    });
+
+    describe('订单状态库', function () {
+        var orderStateMgr, dbModel, stateConst;
+        var orderIdInDb;
+
+        beforeEach(function (done) {
+            orderStateMgr = require('../server/modules/db/SalesOrderStates');
+            dbModel = require('../server/modules/sales/db/DbModels').SalesOrder;
+            stateConst = require('../server/modules/sales/db/models/SalesOrderStatus').statusValues;
+            clearDB(done)
+        });
+
+        describe('创建订单生命周期', function () {
+            it('指定订单不存在', function () {
+                return orderStateMgr.create('5af8fbb0add2862e58e5243b', stateConst.DRAFT)
+                    .then(function () {
+                        throw 'test failed'
+                    })
+                    .catch(function (e) {
+                        expect(e.message).eqls('The order does not exist!');
+                    })
+            });
+
+            it('成功', function () {
+                return dbSave(dbModel, {orderNo: '00001'})
+                    .then(function (data) {
+                        orderIdInDb = data.id;
+                        return orderStateMgr.create(orderIdInDb, stateConst.DRAFT);
+                    })
+                    .then(function (data) {
+                        expect(data).eqls(stateConst.DRAFT);
+                    })
+            })
+        })
     })
 });

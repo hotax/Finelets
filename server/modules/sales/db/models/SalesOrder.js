@@ -63,7 +63,7 @@ const SalesOrderSchema = new Schema({
     "items": [OrderItemSchema],
     "review": ReviewSchema,
     "sales": String,
-    "status": {type: Number, default: statusValue.statusValues.DRAFT},
+    "status": {type: Number, default: statusValue.statusValues.DRAFTING},
     "createDate": {type: Date, default: Date.now, required: true},
     "modifiedDate": {type: Date, default: Date.now, required: true}
 },  transformOption);
