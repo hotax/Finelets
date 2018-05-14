@@ -21,5 +21,20 @@ module.exports = {
             .then(function (order) {
                 return order ? order.status : null;
             })
+    },
+    update: function (orderId, fromState, toState) {
+        return dbModel.findById(orderId)
+            .then(function (order) {
+                if (!order) {
+                    logger.error("The order[id='" + orderId + "'] does not exist!");
+                    return Promise.reject(new Error('The order does not exist!'));
+                }
+                if(order.status !== fromState) return order.status;
+                order.status = toState;
+                return order.save()
+                    .then(function (order) {
+                        return order.status;
+                    })
+            })
     }
 };

@@ -301,6 +301,40 @@ describe('Application', function () {
                         expect(state).eqls(stateConst.RUNNING);
                     })
             })
-        })
+        });
+
+        describe('订单生命周期状态迁移', function () {
+            it('指定订单不存在', function () {
+                return orderStateMgr.update('5af8fbb0add2862e58e5243b', stateConst.DRAFT, stateConst.LOCKED)
+                    .then(function () {
+                        throw 'test failed'
+                    })
+                    .catch(function (e) {
+                        expect(e.message).eqls('The order does not exist!');
+                    })
+            });
+
+            it('当前状态与迁移的起始状态不一致', function () {
+                return dbSave(dbModel, {orderNo: '00001', status: stateConst.DRAFTING})
+                    .then(function (data) {
+                        orderIdInDb = data.id;
+                        return orderStateMgr.update(orderIdInDb, stateConst.DRAFT, stateConst.LOCKED);
+                    })
+                    .then(function (state) {
+                        expect(state).eqls(stateConst.DRAFTING)
+                    })
+            });
+
+            it('成功迁移', function () {
+                return dbSave(dbModel, {orderNo: '00001', status: stateConst.DRAFT})
+                    .then(function (data) {
+                        orderIdInDb = data.id;
+                        return orderStateMgr.update(orderIdInDb, stateConst.DRAFT, stateConst.LOCKED);
+                    })
+                    .then(function (state) {
+                        expect(state).eqls(stateConst.LOCKED)
+                    })
+            })
+        });
     })
 });
