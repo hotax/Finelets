@@ -15,5 +15,11 @@ module.exports = {
             .then(function (order) {
                 return order.status;
             })
+    },
+    get: function (orderId) {
+        return dbModel.findById(orderId)
+            .then(function (order) {
+                return order ? order.status : null;
+            })
     }
 };
