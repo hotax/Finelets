@@ -6,8 +6,8 @@ module.exports = {
         "transportation reviewer": "TransportationReviewer"
     },
     Sales: {
-        "review draft orders": "DraftOrders",
-        "place order": 'DraftOrders',
+        "draft": 'DraftOrders',
+        "list drafts": "DraftOrders",
         "exit": "Login"
     },
     DraftOrder: {

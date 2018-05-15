@@ -1,4 +1,4 @@
-const messageSendor = require('../../system/MQ'),
+var messageSendor = require('../../system/MQ'),
     salesDb = require('./db/SalesDb'),
     sales = require('./Sales');
 

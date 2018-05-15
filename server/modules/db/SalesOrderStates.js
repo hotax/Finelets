@@ -13,6 +13,7 @@ module.exports = {
                 return order.save();
             })
             .then(function (order) {
+                logger.debug('The order[' + orderId + '] state is ' + order.status);
                 return order.status;
             })
     },

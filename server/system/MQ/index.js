@@ -14,5 +14,8 @@ const mqConfig = {
     }
 };
 
-module.exports = msgCenter(mq(mqConfig));
+mq.initMQ(mqConfig);
+module.exports = msgCenter(mq.MQ(mqConfig));
+
+
 

@@ -1,5 +1,5 @@
 module.exports = {
-    url: '/api/sales/roles/transportationReviewer',
+    url: '/api/transportation/roles/transportationReviewer',
     rests: [
         {
             type: 'entry'
