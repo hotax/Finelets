@@ -7,7 +7,11 @@ module.exports = {
             type: 'read',
             handler: function (req, res) {
                 var id = req.params["id"];
-                return salesDb.getOrder(id);
+                return salesDb.getOrder(id)
+                    .then(function (data) {
+                        if(!data) return Promise.reject('Not-Found');
+                        return data;
+                    })
             }
         },
         {
