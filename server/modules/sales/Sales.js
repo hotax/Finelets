@@ -10,7 +10,6 @@ module.exports = function (messageSendor, orderFactory) {
                 .then(function () {
                     return order;
                 })
-
         },
         commitDraftOrderToPreview: function (orders) {
             var actions = [];
