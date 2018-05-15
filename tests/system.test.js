@@ -17,7 +17,8 @@ describe('Application', function () {
             var messageCenter;
             beforeEach(function () {
                 var logger = require('@finelets/hyper-rest/app/Logger');
-                return require('../server/system/MQ/RabbitMQImple')({
+                var mq = require('../server/system/MQ/RabbitMQImple');
+                var config = {
                     name: 'AnSteel',
                     connectingStr: process.env.MQ,
                     consumers: {
@@ -25,9 +26,10 @@ describe('Application', function () {
                             logger.info("look, the message was dealed with: " + JSON.stringify(msg));
                         }
                     }
-                })
-                    .then(function (obj) {
-                        messageCenter = obj;
+                };
+                return mq.initMQ(config)
+                    .then(function () {
+                        messageCenter = mq.MQ(config);
                     });
             });
 
