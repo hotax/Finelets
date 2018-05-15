@@ -6,6 +6,12 @@ module.exports = {
     createOrder: function (raw) {
         return dbSave(dbSchema.SalesOrder, raw);
     },
+    getOrder: function (id) {
+        return dbSchema.SalesOrder.findById(id)
+            .then(function (obj) {
+                return obj ? obj.toJSON() : obj;
+            })
+    },
     listUnlockedDraftOrders: function (fields) {
         var results = [];
         return dbSchema.SalesOrder.find({status: orderStatusValue.statusValues.DRAFT})

@@ -8,12 +8,13 @@ describe('Application', function () {
         mongoose.Promise = global.Promise;
     });
 
-    beforeEach(function () {
+    beforeEach(function (done) {
         stubs = {};
         err = new Error('any error message');
         reason = {reason: 'any reason representing any error'};
         createReasonStub = sinon.stub();
         stubs['@finelets/hyper-rest/app'] = {createErrorReason: createReasonStub};
+        clearDB(done);
     });
 
     describe('销售子系统', function () {
@@ -37,6 +38,27 @@ describe('Application', function () {
                     stubs['@finelets/hyper-rest/db/mongoDb/SaveObjectToDb'] = dbSaverStub;
                     salesDb = proxyquire('../server/modules/sales/db/SalesDb', stubs);
                     return salesDb.createOrder(orderData)
+                        .then(function (data) {
+                            expect(data).eqls(order);
+                        })
+                })
+            });
+
+            describe('读取指定订单', function () {
+                it('指定订单不存在', function () {
+                    return salesDb.getOrder('5afa9c45d3f1de28e0048c2d')
+                        .then(function (data) {
+                            expect(data).null;
+                        })
+                });
+
+                it('成功', function () {
+                    var order;
+                    return dbSave(dbModels.SalesOrder, {orderNo: '00001'})
+                        .then(function (data) {
+                            order = data.toJSON();
+                            return salesDb.getOrder(data.id);
+                        })
                         .then(function (data) {
                             expect(data).eqls(order);
                         })
