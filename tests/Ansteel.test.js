@@ -336,6 +336,24 @@ describe('Application', function () {
                     })
             })
         });
+
+        describe('查询指定生命周期状态的订单列表', function () {
+            it('成功', function () {
+                var tasks = [];
+                tasks.push(dbSave(dbModel, {orderNo: '00001', status:stateConst.DRAFT}));
+                tasks.push(dbSave(dbModel, {orderNo: '00002', status:stateConst.LOCKED}));
+                tasks.push(dbSave(dbModel, {orderNo: '00003', status:stateConst.RUNNING}));
+                return Promise.all(tasks)
+                    .then(function () {
+                        return orderStateMgr.listOnState(stateConst.LOCKED, ['orderNo', 'status']);
+                    })
+                    .then(function (list) {
+                        expect(list.length).eqls(1);
+                        delete list[0].id;
+                        expect(list[0]).eqls({orderNo: '00002', status:stateConst.LOCKED});
+                    })
+            })
+        })
     });
 
     describe('订单评审资料库', function () {

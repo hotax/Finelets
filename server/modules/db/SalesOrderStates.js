@@ -37,5 +37,18 @@ module.exports = {
                         return order.status;
                     })
             })
+    },
+    listOnState: function (state, fields) {
+        var results = [];
+        var flds = fields ? fields : [];
+        return dbModel.find({status: state})
+            .select(flds)
+            .exec()
+            .then(function (data) {
+                data.forEach(function (item) {
+                    results.push(item.toJSON());
+                });
+                return results;
+            })
     }
 };
